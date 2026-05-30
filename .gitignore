@@ -1,0 +1,4 @@
+node_modules/
+ngwords.private.json
+*.log
+.DS_Store

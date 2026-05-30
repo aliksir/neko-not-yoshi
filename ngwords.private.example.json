@@ -1,0 +1,8 @@
+{
+  "_comment": "これはテンプレート。実体は ngwords.private.json（.gitignore 対象、非公開）にコピーして使う。顧客名・個人名など『これ自体が機密』なNGワードをここに登録する。公開リポには絶対にコミットしない。",
+  "_usage": "cp ngwords.private.example.json ngwords.private.json してから add --private で語を追加するか直接編集する。",
+  "words": [
+    {"value": "<顧客名の例>", "category": "customer", "severity": "block"},
+    {"value": "<個人名の例>", "category": "pii", "severity": "block"}
+  ]
+}

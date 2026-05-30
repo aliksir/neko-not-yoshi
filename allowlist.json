@@ -1,0 +1,12 @@
+{
+  "_comment": "false positive 抑制リスト。match を含む行が pathGlob にマッチするファイルにある場合、その検出をスキップする。",
+  "allow": [
+    {"match": "hide.kiyohara@gmail.com", "reason": "OSS author email (plugin.json author field, public)", "pathGlob": "**/plugin.json"},
+    {"match": "author: aliks", "reason": "OSS author frontmatter (SKILL.md, public)", "pathGlob": "**/SKILL.md"},
+    {"match": "aliksir", "reason": "GitHub org name (public URLs / clone / badges)", "pathGlob": "**"},
+    {"match": "noreply@anthropic.com", "reason": "Co-Authored-By signature (contextual-commits convention, public)", "pathGlob": "**"},
+    {"match": "UserId=aliks", "reason": "CHANGELOG history record (immutable past entry)", "pathGlob": "**/CHANGELOG.md"},
+    {"match": "C:/Users/aliks", "reason": "E-class OUT runtime constant, temporary until os.homedir() refactor", "pathGlob": "**/nightly-runner.mjs"},
+    {"match": "C:/Users/aliks", "reason": "E-class OUT runtime prompt_template path, temporary", "pathGlob": "**/nightly-policy.yml"}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "_comment": "公開可能な検知パターン（正規表現）。具体的な顧客名・個人名は含まない（それらは ngwords.private.json）。IPのオクテット範囲チェック・プライベート/サブネットマスク降格は scanner.mjs が補助判定する。",
+  "patterns": [
+    {"id": "email", "category": "pii", "regex": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "severity": "block"},
+    {"id": "local-path-home", "category": "pii", "regex": "[A-Za-z]:[\\\\/]Users[\\\\/][^\\s\"'`,)]+", "severity": "block"},
+    {"id": "phone-jp", "category": "pii", "regex": "0\\d{1,4}-\\d{1,4}-\\d{4}", "severity": "block"},
+    {"id": "ipv4", "category": "network", "regex": "(?:\\d{1,3}\\.){3}\\d{1,3}", "severity": "block", "_note": "scanner がオクテット0-255検証・プライベート/サブネットマスク降格を行う"},
+    {"id": "ipv6", "category": "network", "regex": "(?:[A-Fa-f0-9]{1,4}:){2,7}[A-Fa-f0-9]{1,4}", "severity": "block", "_note": "簡易パターン、誤検出注意。scanner が :: 短縮等を補助判定"},
+    {"id": "local-path-work", "category": "local-path", "regex": "[A-Za-z]:[\\\\/]work", "severity": "warning"},
+    {"id": "local-path-cwork", "category": "local-path", "regex": "/c/work", "severity": "warning"}
+  ]
+}
