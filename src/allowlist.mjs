@@ -30,17 +30,35 @@ export function loadAllowlist() {
     let data;
     try { data = JSON.parse(readFileSync(path, 'utf8')); } catch { continue; }
     for (const a of data.allow || []) {
-      result.push({ ...a, _glob: globToRegex(a.pathGlob || '**') });
+      result.push({ ...a, action: a.action || 'allow', _glob: globToRegex(a.pathGlob || '**') });
     }
   }
   return result;
 }
 
-// その行に allow.match が含まれ、かつ relPath が pathGlob にマッチすればスキップ対象。
+// その行に allow.match が含まれ、かつ relPath が pathGlob にマッチすればスキップ対象（完全許可）。
+// downgrade エントリ（action!=='allow'）は許可判定に使わない（finding を誤って消去しないため）。
 export function isAllowed(allowlist, lineText, relPath) {
   const norm = relPath.split('\\').join('/');
   for (const a of allowlist) {
+    if (a.action !== 'allow') continue;
     if (a.match && lineText.includes(a.match) && a._glob.test(norm)) return a;
+  }
+  return null;
+}
+
+// 降格対象エントリ（action==='downgrade'）を返す。block→warning 降格に使う。
+// match は省略可（ディレクトリ単位降格）。指定時は行に含まれることが AND 条件。
+// category 配列指定時は finding の category が含まれる時のみ該当（未指定なら全カテゴリ）。
+// pathGlob が必須の歯止め（過剰緩和防止 — 検知ルールディレクトリ等に限定する前提）。
+export function downgradeFor(allowlist, lineText, relPath, category) {
+  if (category === 'customer') return null; // 顧客名は関数レベルでも絶対に降格不可（不変条件の三重防御。allowlist.json に誤って customer を書いても弾く）
+  const norm = relPath.split('\\').join('/');
+  for (const a of allowlist) {
+    if (a.action !== 'downgrade') continue;
+    if (a.match && !lineText.includes(a.match)) continue;
+    if (Array.isArray(a.category) && !a.category.includes(category)) continue;
+    if (a._glob.test(norm)) return a;
   }
   return null;
 }

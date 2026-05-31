@@ -54,7 +54,9 @@
 
 - **公開版** (`ngwords.public.json`): 正規表現パターンのみ。リポ同梱可
 - **非公開版** (`ngwords.private.json`): 顧客名実体。`.gitignore` で除外、手元限定。`ngwords.private.example.json` をコピーして作る
-- **allowlist** (`allowlist.json`): OSS作者表記など正当な公開情報を許可（pathGlob で限定）
+- **allowlist** (`allowlist.json`): OSS作者表記など正当な公開情報を許可（pathGlob で限定）。各エントリは `action` を持つ:
+  - `"allow"`（既定）: 完全許可（`match` 必須）。finding 自体を抑制する
+  - `"downgrade"`: `block`→`warning` に降格（`match` 省略可、`pathGlob` / `category` で限定）。finding は残るので報告には出るが exit 0（push は通る）= **見逃さない**。セキュリティ検知ルール（`**/semgrep-rules/**` 配下の IOC・架空攻撃サンプル等、ツールの検知対象であり自リポの漏洩ではないもの）の false positive 抑制に使う。`customer`（顧客名）カテゴリは降格対象外（不変条件保護）
 
 ## 免責事項 / Disclaimer
 

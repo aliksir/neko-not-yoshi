@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, relative, extname } from 'node:path';
 import { loadNgwords } from './ngwords.mjs';
-import { loadAllowlist, isAllowed } from './allowlist.mjs';
+import { loadAllowlist, isAllowed, downgradeFor } from './allowlist.mjs';
 
 const EXCLUDE_DIRS = new Set(['.git', 'node_modules', '_deleted', '_archive', '.pytest_cache']);
 const BINARY_EXT = new Set([
@@ -133,7 +133,15 @@ export function scan(targetDir, opts = {}) {
             if (local === 'noreply' || local === 'no-reply') severity = 'warning';
           }
           if (!isAllowed(allowlist, line, rel)) {
-            findings.push({ file: rel, line: idx + 1, severity, category: p.category, match: matchText, id: p.id });
+            // severity は上記の ipv4/email 降格を適用済みの値。block かつ降格ルール該当なら warning へ降格。
+            // 顧客名(customer)は private 語ループでのみ検出され、そのループは降格処理を持たない（構造除外）。
+            // 下の p.category!=='customer' は現状の public パターンでは到達しないが、将来 customer 種別の
+            // public パターンが追加された場合の保険（fail-safe、downgradeFor 内ガードと合わせた多層防御）。
+            let sev = severity;
+            if (sev === 'block' && p.category !== 'customer' && downgradeFor(allowlist, line, rel, p.category)) {
+              sev = 'warning';
+            }
+            findings.push({ file: rel, line: idx + 1, severity: sev, category: p.category, match: matchText, id: p.id });
           }
           if (m.index === p._re.lastIndex) p._re.lastIndex++;
         }

@@ -1,5 +1,5 @@
 {
-  "_comment": "公開可能な allowlist（汎用例のみ、具体的な個人名/メール/パスは含まない）。環境固有の許可は allowlist.local.json（.gitignore）に書く。両ファイルはマージされる。下記は自身の test フィクスチャ（RFC予約サンプル）の許可。",
+  "_comment": "公開可能な allowlist（汎用例のみ、具体的な個人名/メール/パスは含まない）。環境固有の許可は allowlist.local.json（.gitignore）に書く。両ファイルはマージされる。action:'allow'（既定）は完全許可（match必須）、action:'downgrade' は block→warning 降格（match省略可・pathGlob/category で限定、findings には残る）。下記は test フィクスチャの許可と、セキュリティ検知ルールディレクトリの降格ルール。",
   "allow": [
     {"match": "203.0.113.", "reason": "RFC5737 documentation/test IP fixture", "pathGlob": "**/test/**"},
     {"match": "198.51.100.", "reason": "RFC5737 TEST-NET-2 IP fixture", "pathGlob": "**/test/**"},
@@ -7,6 +7,7 @@
     {"match": "@example.", "reason": "RFC2606 example domain (test/docs fixture)", "pathGlob": "**/test/**"},
     {"match": "@example.", "reason": "example author email in plugin.json fixture", "pathGlob": "**/plugin.json"},
     {"match": "@realcorp.io", "reason": "test fixture domain", "pathGlob": "**/test/**"},
-    {"match": "C:/Users/", "reason": "home-path test fixture (alice/bob/<other>)", "pathGlob": "**/test/**"}
+    {"match": "C:/Users/", "reason": "home-path test fixture (alice/bob/<other>)", "pathGlob": "**/test/**"},
+    {"action": "downgrade", "pathGlob": "**/semgrep-rules/**", "category": ["pii", "network"], "reason": "セキュリティ検知ルール内のIOC/架空サンプル（攻撃者メール・C2 IP 等）はツールの検知対象であり自リポの漏洩ではない。block→warning に降格し findings には残す（FN ゼロ維持）。customer カテゴリは降格対象外。"}
   ]
 }

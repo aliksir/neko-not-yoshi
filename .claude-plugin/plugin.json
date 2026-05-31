@@ -1,6 +1,6 @@
 {
   "name": "neko-not-yoshi",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Pre-push secret/PII scanner. Detects personal info, customer names, and global IP addresses before `git push` so you don't accidentally publish what shouldn't go public. Zero dependencies, Node.js v22+.",
   "author": {
     "name": "aliksir",
