@@ -1,0 +1,23 @@
+{
+  "name": "neko-not-yoshi",
+  "version": "0.1.2",
+  "description": "Pre-push secret/PII scanner. Detects personal info, customer names, and global IP addresses before `git push` so you don't accidentally publish what shouldn't go public. Zero dependencies, Node.js v22+.",
+  "author": {
+    "name": "aliksir",
+    "url": "https://github.com/aliksir"
+  },
+  "homepage": "https://github.com/aliksir/neko-not-yoshi#readme",
+  "repository": "https://github.com/aliksir/neko-not-yoshi",
+  "license": "MIT",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "security",
+    "pii",
+    "secret-scanning",
+    "git",
+    "pre-push",
+    "leak-prevention",
+    "cli"
+  ]
+}
