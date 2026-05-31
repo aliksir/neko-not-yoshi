@@ -20,11 +20,20 @@ export function globToRegex(glob) {
   return new RegExp(re + '$');
 }
 
+// 公開版 allowlist.json と ローカル専用 allowlist.local.json（.gitignore）をマージ。
+// 環境固有の許可（個人 email / ホームパス等）は local 側に置き、公開版には汎用例のみ。
 export function loadAllowlist() {
-  const path = join(ROOT, 'allowlist.json');
-  if (!existsSync(path)) return [];
-  const data = JSON.parse(readFileSync(path, 'utf8'));
-  return (data.allow || []).map((a) => ({ ...a, _glob: globToRegex(a.pathGlob || '**') }));
+  const result = [];
+  for (const fname of ['allowlist.json', 'allowlist.local.json']) {
+    const path = join(ROOT, fname);
+    if (!existsSync(path)) continue;
+    let data;
+    try { data = JSON.parse(readFileSync(path, 'utf8')); } catch { continue; }
+    for (const a of data.allow || []) {
+      result.push({ ...a, _glob: globToRegex(a.pathGlob || '**') });
+    }
+  }
+  return result;
 }
 
 // その行に allow.match が含まれ、かつ relPath が pathGlob にマッチすればスキップ対象。

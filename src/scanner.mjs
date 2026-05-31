@@ -28,11 +28,13 @@ function walk(dir, files = []) {
   return files;
 }
 
-// git 管理リポなら追跡ファイル（= 公開リポにコミットされるファイル）のみ取得。
-// .gitignore 済みのローカル生成物（nightly 実行ログ等）を漏洩チェックから自動除外する。
-function gitTrackedFiles(dir) {
+// git 管理リポなら「追跡ファイル + ignore対象外の未追跡ファイル」を取得。
+// --cached(追跡) + --others(未追跡) + --exclude-standard(.gitignore除外)。
+// .gitignore 済みのローカル生成物（nightly 実行ログ等）のみ除外し、git add 前の未追跡の
+// 新規ファイルは漏洩チェック対象に含める（最後の砦の裏口=untracked漏れ を塞ぐ、kurouto指摘）。
+function gitScannableFiles(dir) {
   try {
-    const out = execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
+    const out = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
     const rels = out.split('\n').filter(Boolean);
     return rels.length ? rels.map((r) => join(dir, r)) : null;
   } catch {
@@ -78,7 +80,7 @@ function isAsciiWord(s) {
   return true;
 }
 
-// ASCII語は語境界マッチ（aliks が aliksir に誤マッチしない）、非ASCIIは includes
+// ASCII語は語境界マッチ（alice が alicer に誤マッチしない）、非ASCIIは includes
 export function matchPrivateWord(line, word) {
   if (isAsciiWord(word)) {
     const esc = word.replace(/[^A-Za-z0-9_]/g, (c) => '\\' + c);
@@ -96,8 +98,8 @@ export function scan(targetDir, opts = {}) {
   const { patterns, words } = loadNgwords({ includePrivate });
   const allowlist = loadAllowlist();
   const compiled = patterns.map((p) => ({ ...p, _re: safeRegex(p.regex) })).filter((p) => p._re);
-  // デフォルト: git 追跡ファイルのみ（公開対象）。--all で .gitignore 済みも含め全走査。
-  const files = opts.all ? walk(targetDir) : (gitTrackedFiles(targetDir) || walk(targetDir));
+  // デフォルト: git 追跡 + ignore対象外の未追跡（=コミットされうる対象）。--all で .gitignore 済みも含め全走査。
+  const files = opts.all ? walk(targetDir) : (gitScannableFiles(targetDir) || walk(targetDir));
   const findings = [];
 
   for (const file of files) {

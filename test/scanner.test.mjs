@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { classifyIPv4, looksLikeIPv6, matchPrivateWord, scan } from '../src/scanner.mjs';
 import { globToRegex } from '../src/allowlist.mjs';
 
@@ -13,7 +14,7 @@ function setup() {
 // ===== classifyIPv4 (C18) =====
 test('T15: global IP=false(block), private/loopback=true(warning)', () => {
   assert.equal(classifyIPv4('203.0.113.5'), false);
-  assert.equal(classifyIPv4('8.8.8.8'), false);
+  assert.equal(classifyIPv4('198.51.100.8'), false);
   assert.equal(classifyIPv4('192.168.1.1'), true);
   assert.equal(classifyIPv4('10.0.0.1'), true);
   assert.equal(classifyIPv4('172.16.5.4'), true);
@@ -36,10 +37,10 @@ test('T16b: IPv6 excludes time HH:MM:SS and score 1:1:1, keeps real IPv6', () =>
 });
 
 // ===== matchPrivateWord (C11, FIX-2) =====
-test('T11: ASCII word-boundary (aliks != aliksir)', () => {
-  assert.equal(matchPrivateWord('github.com/aliksir/repo', 'aliks'), false);
-  assert.equal(matchPrivateWord('C:/Users/aliks/file', 'aliks'), true);
-  assert.equal(matchPrivateWord('user aliks here', 'aliks'), true);
+test('T11: ASCII word-boundary (alice != alicer)', () => {
+  assert.equal(matchPrivateWord('github.com/alicer/repo', 'alice'), false);
+  assert.equal(matchPrivateWord('C:/Users/alice/file', 'alice'), true);
+  assert.equal(matchPrivateWord('user alice here', 'alice'), true);
 });
 
 test('private non-ASCII (Japanese) uses includes', () => {
@@ -119,9 +120,9 @@ test('T16-int: 255.255.255.0 not block (warning)', () => {
 
 test('T5: author email in plugin.json allowed via allowlist', () => {
   const dir = setup();
-  writeFileSync(join(dir, 'plugin.json'), '{"author":{"email":"hide.kiyohara@gmail.com"}}');
+  writeFileSync(join(dir, 'plugin.json'), '{"author":{"email":"maintainer@example.org"}}');
   const res = scan(dir);
-  assert.equal(res.findings.find((x) => x.match.includes('hide.kiyohara')), undefined);
+  assert.equal(res.findings.find((x) => x.match.includes('maintainer@example.org')), undefined);
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -148,5 +149,28 @@ test('T7: warningsAsErrors makes warning exit 1', () => {
   writeFileSync(join(dir, 'w.txt'), 'see C:/work/here');
   const res = scan(dir, { warningsAsErrors: true });
   assert.equal(res.exitCode, 1);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('T18: git mode scans UNTRACKED new file (kurouto FIX: backdoor closed)', () => {
+  const dir = setup();
+  execFileSync('git', ['init', '-q'], { cwd: dir });
+  // git add していない未追跡の新規ファイルに漏洩を仕込む
+  writeFileSync(join(dir, 'notes.md'), 'customer contact foo@realcorp.io secret');
+  const res = scan(dir); // git mode（--all なし）
+  const f = res.findings.find((x) => x.id === 'email');
+  assert.ok(f && f.severity === 'block', 'untracked new file must be scanned');
+  assert.equal(res.exitCode, 1);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('T19: git mode excludes .gitignored file', () => {
+  const dir = setup();
+  execFileSync('git', ['init', '-q'], { cwd: dir });
+  writeFileSync(join(dir, '.gitignore'), 'ignored.md\n');
+  writeFileSync(join(dir, 'ignored.md'), 'leaked@realcorp.io should be ignored');
+  const res = scan(dir);
+  assert.equal(res.findings.find((x) => x.id === 'email'), undefined, 'gitignored file excluded');
+  assert.equal(res.exitCode, 0);
   rmSync(dir, { recursive: true, force: true });
 });

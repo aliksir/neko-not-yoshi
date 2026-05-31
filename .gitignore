@@ -1,4 +1,5 @@
 node_modules/
 ngwords.private.json
+allowlist.local.json
 *.log
 .DS_Store

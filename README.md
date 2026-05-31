@@ -36,6 +36,14 @@
     node src/cli.mjs mask <path>           # dry-run（プレビューのみ）
     node src/cli.mjs mask <path> --write   # 実ファイル書換（git 管理下推奨）
 
+## 走査範囲
+
+- **デフォルト**: git 追跡ファイル + **未追跡（.gitignore 対象外）ファイル**を走査し、.gitignore 済みのみ除外（`git ls-files --cached --others --exclude-standard` 相当）。git 管理外なら全ファイル走査
+- **`--all`**: .gitignore 済みも含む全走査
+- これにより `git add` 前の未追跡新規ファイル（漏洩しうる）も検査し、.gitignore 済みのローカル生成物（実行ログ等）は除外する
+- **注**: private 語の ASCII マッチは case-sensitive（`Acme` 登録で `acme` は別扱い）。顧客名は登録時の表記に注意
+- **注**: `allowlist.json` の `**/test/**` 許可は自身の test フィクスチャ用。**test フィクスチャには本物の個人情報を置かず**、RFC5737 予約IP（`203.0.113.x`/`198.51.100.x`）や `example.org` 等の予約サンプルを使うこと（本物の漏洩を見逃さないため）
+
 ## 完了ゲート統合
 
 公開リポへの push を伴うタスクの完了ゲートで実行し、exit 0（block ゼロ）を確認してから push する。
