@@ -80,6 +80,34 @@ test('T1b: example.com email is warning (RFC2606 sample domain)', () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+test('T1c: noreply@ email is warning (send-only address, non-example domain)', () => {
+  const dir = setup();
+  writeFileSync(join(dir, 'nr.txt'), 'Co-Authored-By: Claude <noreply@anthropic.com>');
+  const res = scan(dir);
+  const f = res.findings.find((x) => x.id === 'email');
+  assert.ok(f && f.severity === 'warning');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('T1d: no-reply@ (hyphen) is warning regardless of domain (non-example TLD)', () => {
+  const dir = setup();
+  // ドメインは example.com 系ではない（.example TLD）→ 降格根拠はローカル部 no-reply のみ＝ドメイン非依存を実証
+  writeFileSync(join(dir, 'nr2.txt'), 'sender no-reply@service.example notice');
+  const res = scan(dir);
+  const f = res.findings.find((x) => x.id === 'email');
+  assert.ok(f && f.severity === 'warning');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('T1e: NOREPLY@ (uppercase) email is warning', () => {
+  const dir = setup();
+  writeFileSync(join(dir, 'nr3.txt'), 'NOREPLY@anthropic.com sent this');
+  const res = scan(dir);
+  const f = res.findings.find((x) => x.id === 'email');
+  assert.ok(f && f.severity === 'warning');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 test('T13: new home path C:/Users/<other> is block', () => {
   const dir = setup();
   writeFileSync(join(dir, 'b.txt'), 'path C:/Users/bob/secret.json here');

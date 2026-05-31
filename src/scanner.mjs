@@ -126,8 +126,11 @@ export function scan(targetDir, opts = {}) {
             continue;
           }
           if (p.id === 'email') {
+            const local = (matchText.split('@')[0] || '').toLowerCase();
             const d = (matchText.split('@')[1] || '').toLowerCase();
             if (d === 'example.com' || d === 'example.org' || d === 'example.net') severity = 'warning';
+            // noreply/no-reply は送信専用アドレスで個人非特定 → warning 降格（DISCRETION-001: 検出網を狭める変更、安易に削除しない）
+            if (local === 'noreply' || local === 'no-reply') severity = 'warning';
           }
           if (!isAllowed(allowlist, line, rel)) {
             findings.push({ file: rel, line: idx + 1, severity, category: p.category, match: matchText, id: p.id });
