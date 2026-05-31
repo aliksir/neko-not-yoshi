@@ -56,6 +56,12 @@
 - **非公開版** (`ngwords.private.json`): 顧客名実体。`.gitignore` で除外、手元限定。`ngwords.private.example.json` をコピーして作る
 - **allowlist** (`allowlist.json`): OSS作者表記など正当な公開情報を許可（pathGlob で限定）
 
+## 免責事項 / Disclaimer
+
+NEKO-not-yoshi はパターンマッチングと NG ワードリストに基づく**補助ツール**であり、**個人情報・顧客名・機密情報の 100% 完全な検出・除去を保証するものではありません**。正規表現や語リストに合致しない未知の漏洩、文脈依存の機密、難読化・暗号化された情報は見逃す可能性があります。**最終的な公開可否は必ず人間がレビューしてください。** 本ツールの使用により生じたいかなる漏洩・損害についても作者は責任を負いません。
+
+This is an assistive tool based on pattern matching and NG-word lists. It does **NOT guarantee 100% complete detection or removal** of personal information, customer names, or confidential data. Unknown patterns, context-dependent secrets, and obfuscated/encrypted data may be missed. **Always have a human review before publishing.** The author assumes no liability for any leaks or damages arising from the use of this tool.
+
 ## ライセンス
 
 MIT
