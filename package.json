@@ -1,6 +1,6 @@
 {
   "name": "neko-not-yoshi",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "個人情報・顧客名スキャナ。公開リポへの push 前に、猫が ヨシッ と言えない漏洩（個人情報・顧客名・グローバルIP）を検出する。",
   "type": "module",
   "bin": {
