@@ -42,6 +42,21 @@ cd neko-not-yoshi
     node src/cli.mjs list
     node src/cli.mjs list --private
 
+### import — NGワード一括インポート
+
+    node src/cli.mjs import words.csv      # CSV（value,category,severity）
+    node src/cli.mjs import words.txt      # TXT（1行1ワード、デフォルト custom/block）
+    node src/cli.mjs import words.md       # Markdownテーブル（| value | category | severity |）
+
+重複は自動スキップ。全エントリは private リストに追加される。
+
+### export — NGワードエクスポート
+
+    node src/cli.mjs export                # CSV で stdout 出力（デフォルト）
+    node src/cli.mjs export --format txt   # value のみ
+    node src/cli.mjs export --format md    # Markdownテーブル
+    node src/cli.mjs export --public       # public パターンも含む
+
 ### mask — 伏字化
 
     node src/cli.mjs mask <path>           # dry-run（プレビューのみ）

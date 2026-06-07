@@ -42,6 +42,21 @@ No dependencies required (zero-dependency design).
     node src/cli.mjs list
     node src/cli.mjs list --private
 
+### import — Bulk import NG words
+
+    node src/cli.mjs import words.csv      # CSV (value,category,severity)
+    node src/cli.mjs import words.txt      # TXT (one word per line, defaults to custom/block)
+    node src/cli.mjs import words.md       # Markdown table (| value | category | severity |)
+
+Duplicates are automatically skipped. All entries are added to the private list.
+
+### export — Export NG words
+
+    node src/cli.mjs export                # CSV to stdout (default)
+    node src/cli.mjs export --format txt   # values only
+    node src/cli.mjs export --format md    # Markdown table
+    node src/cli.mjs export --public       # include public patterns
+
 ### mask — Redaction
 
     node src/cli.mjs mask <path>           # dry-run (preview only)
