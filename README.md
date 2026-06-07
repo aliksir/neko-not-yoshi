@@ -1,4 +1,5 @@
 > For the Japanese version, see [README.ja.md](README.ja.md).
+> Part of the [neko-HQ](https://github.com/aliksir/neko-hq) ecosystem.
 
 # neko-not-yoshi
 
