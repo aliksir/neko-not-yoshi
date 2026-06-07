@@ -118,6 +118,24 @@ function cmdMask(args) {
   process.exit(0);
 }
 
+function cmdImport(args) {
+  const file = args.find((a) => !a.startsWith('--'));
+  if (!file) { console.error('import: <file> が必要 (csv/txt/md)'); process.exit(2); }
+  import('./importer.mjs').then(({ importFile }) => {
+    const res = importFile(file);
+    process.exit(res.exitCode);
+  });
+}
+
+function cmdExport(args) {
+  const format = flagVal(args, '--format') || 'csv';
+  const includePublic = args.includes('--public');
+  import('./exporter.mjs').then(({ exportWords }) => {
+    exportWords(format, includePublic);
+    process.exit(0);
+  });
+}
+
 function main() {
   const [, , cmd, ...rest] = process.argv;
   switch (cmd) {
@@ -125,12 +143,16 @@ function main() {
     case 'add': return cmdAdd(rest);
     case 'list': return cmdList(rest);
     case 'mask': return cmdMask(rest);
+    case 'import': return cmdImport(rest);
+    case 'export': return cmdExport(rest);
     default:
-      console.error('使い方: neko-not-yoshi <scan|add|list|mask> <path|args>');
+      console.error('使い方: neko-not-yoshi <scan|add|list|mask|import|export> <path|args>');
       console.error('  scan <path> [--format text|json] [--no-private] [--warnings-as-errors]');
       console.error('  add --public <regex> | --private <word> [--category <c>] [--severity block|warning] [--id <id>]');
       console.error('  list [--public|--private]');
       console.error('  mask <path> [--write] [--include-warnings]');
+      console.error('  import <file.csv|.txt|.md>  NGワードをバルクインポート');
+      console.error('  export [--format csv|txt|md] [--public]  NGワードをエクスポート');
       process.exit(2);
   }
 }
