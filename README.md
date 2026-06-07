@@ -1,90 +1,90 @@
+> For the Japanese version, see [README.ja.md](README.ja.md).
+
 # neko-not-yoshi
 
-個人情報・顧客名スキャナ。公開リポへの `git push` 前に、漏洩（個人情報・顧客名・グローバルIP）を機械検出して止める **最後の砦**。猫が "ヨシッ" と言えない（= 問題がある）ものを検出する。yoshi 系の依存ゼロ内製ツール。
+A PII and customer name scanner. The **last line of defense** before `git push` to public repositories, detecting leaks (personal information, customer names, global IPs) and blocking the push. It catches things the cat can't say "Yoshi!" (= all clear) to. A zero-dependency, in-house tool in the yoshi family.
 
-## 特徴
+## Features
 
-- **依存ゼロ**（Node.js v22+）
-- **NGワードリスト2種**:
-  - `ngwords.public.json` — 正規表現パターン（email / ホームパス / 電話 / IP / ローカルパス）。具体名を含まないので公開可
-  - `ngwords.private.json` — 顧客名・個人名の実体（`.gitignore` 対象、非公開）
-- **severity 3層**: `block`（push 阻止 = exit 1）/ `warning`（報告のみ = exit 0）/ allowlist（false positive 抑制）
-- **IP 検知**: グローバル IP = block / プライベート・ループバック・サブネットマスク = warning
-- **マスク機能**: 検出箇所を伏字化（デフォルト dry-run、`--write` で実書換）
+- **Zero dependencies** (Node.js v22+)
+- **Two NG-word lists**:
+  - `ngwords.public.json` — Regex patterns (email / home paths / phone numbers / IPs / local paths). Contains no specific names, safe to publish
+  - `ngwords.private.json` — Actual customer and personal names (`.gitignore`d, not published)
+- **3-tier severity**: `block` (prevents push = exit 1) / `warning` (report only = exit 0) / allowlist (false positive suppression)
+- **IP detection**: Global IP = block / Private, loopback, and subnet masks = warning
+- **Masking**: Redacts detected content (dry-run by default, `--write` for actual file modification)
 
-## 使い方
+## Usage
 
-### scan — 漏洩チェック
+### scan — Leak detection
 
-    node src/cli.mjs scan <path>                       # block 検出で exit 1
-    node src/cli.mjs scan <path> --format json         # JSON 出力
-    node src/cli.mjs scan <path> --no-private          # private リスト無効
-    node src/cli.mjs scan <path> --warnings-as-errors  # warning も exit 1
+    node src/cli.mjs scan <path>                       # exit 1 on block detection
+    node src/cli.mjs scan <path> --format json         # JSON output
+    node src/cli.mjs scan <path> --no-private          # disable private list
+    node src/cli.mjs scan <path> --warnings-as-errors  # treat warnings as exit 1
 
-### add — NGワード登録（人手 + Claude 自動蓄積）
+### add — Register NG words (manual + Claude auto-accumulation)
 
-    node src/cli.mjs add --private "顧客名"                # private（.gitignore）に登録
-    node src/cli.mjs add --public "regex" --category pii  # public パターン登録
+    node src/cli.mjs add --private "customer name"          # register in private (.gitignore'd)
+    node src/cli.mjs add --public "regex" --category pii    # register public pattern
 
-### list — 登録リスト表示
+### list — Show registered lists
 
     node src/cli.mjs list
     node src/cli.mjs list --private
 
-### mask — 伏字化
+### mask — Redaction
 
-    node src/cli.mjs mask <path>           # dry-run（プレビューのみ）
-    node src/cli.mjs mask <path> --write   # 実ファイル書換（git 管理下推奨）
+    node src/cli.mjs mask <path>           # dry-run (preview only)
+    node src/cli.mjs mask <path> --write   # modify files in place (git-tracked recommended)
 
-## 走査範囲
+## Scan Scope
 
-- **デフォルト**: git 追跡ファイル + **未追跡（.gitignore 対象外）ファイル**を走査し、.gitignore 済みのみ除外（`git ls-files --cached --others --exclude-standard` 相当）。git 管理外なら全ファイル走査
-- **`--all`**: .gitignore 済みも含む全走査
-- これにより `git add` 前の未追跡新規ファイル（漏洩しうる）も検査し、.gitignore 済みのローカル生成物（実行ログ等）は除外する
-- **注**: private 語の ASCII マッチは case-sensitive（`Acme` 登録で `acme` は別扱い）。顧客名は登録時の表記に注意
-- **注**: `allowlist.json` の `**/test/**` 許可は自身の test フィクスチャ用。**test フィクスチャには本物の個人情報を置かず**、RFC5737 予約IP（`203.0.113.x`/`198.51.100.x`）や `example.org` 等の予約サンプルを使うこと（本物の漏洩を見逃さないため）
+- **Default**: Scans git-tracked files + **untracked files not excluded by .gitignore** (equivalent to `git ls-files --cached --others --exclude-standard`), excluding only .gitignore'd files. Scans all files if not in a git repository
+- **`--all`**: Full scan including .gitignore'd files
+- This ensures untracked new files (potential leaks) are inspected before `git add`, while .gitignore'd local artifacts (execution logs, etc.) are excluded
+- **Note**: ASCII matching for private words is case-sensitive (`Acme` registered will not match `acme`). Pay attention to the exact spelling when registering customer names
+- **Note**: The `**/test/**` entry in `allowlist.json` is for this project's own test fixtures. **Do not place real personal information in test fixtures** — use RFC 5737 reserved IPs (`203.0.113.x` / `198.51.100.x`) and `example.org` instead (to avoid masking real leaks)
 
-## 完了ゲート統合
+## Completion Gate Integration
 
-公開リポへの push を伴うタスクの完了ゲートで実行し、exit 0（block ゼロ）を確認してから push する。
+Run as part of the completion gate for tasks that involve pushing to public repositories. Confirm exit 0 (zero blocks) before pushing.
 
     node src/cli.mjs scan <repo> && git push
 
-## NGワードリストの運用
+## NG-Word List Management
 
-- **公開版** (`ngwords.public.json`): 正規表現パターンのみ。リポ同梱可
-- **非公開版** (`ngwords.private.json`): 顧客名実体。`.gitignore` で除外、手元限定。`ngwords.private.example.json` をコピーして作る
-- **allowlist** (`allowlist.json`): OSS作者表記など正当な公開情報を許可（pathGlob で限定）。各エントリは `action` を持つ:
-  - `"allow"`（既定）: 完全許可（`match` 必須）。finding 自体を抑制する
-  - `"downgrade"`: `block`→`warning` に降格（`match` 省略可、`pathGlob` / `category` で限定）。finding は残るので報告には出るが exit 0（push は通る）= **見逃さない**。セキュリティ検知ルール（`**/semgrep-rules/**` 配下の IOC・架空攻撃サンプル等、ツールの検知対象であり自リポの漏洩ではないもの）の false positive 抑制に使う。`customer`（顧客名）カテゴリは降格対象外（不変条件保護）
+- **Public list** (`ngwords.public.json`): Regex patterns only. Safe to include in the repository
+- **Private list** (`ngwords.private.json`): Actual customer names. Excluded via `.gitignore`, local-only. Copy `ngwords.private.example.json` to create it
+- **Allowlist** (`allowlist.json`): Permits legitimately public information such as OSS author names (scoped by pathGlob). Each entry has an `action`:
+  - `"allow"` (default): Full permit (`match` required). Suppresses the finding entirely
+  - `"downgrade"`: Demotes `block` to `warning` (`match` optional, scoped by `pathGlob` / `category`). The finding remains in reports but exit 0 (push proceeds) = **nothing is silently missed**. Used to suppress false positives from security detection rules (IOCs and synthetic attack samples under `**/semgrep-rules/**`, which are detection targets rather than actual leaks). The `customer` category is exempt from downgrade (invariant protection)
 
-### IOC降格ルール（公開脅威インテリの C2 IP 等、v0.1.4〜）
+### IOC Downgrade Rules (Public Threat Intelligence C2 IPs, v0.1.4+)
 
-セキュリティ検知ツールのリポは、攻撃者の C2 IP（脅威インテリの IOC）を `semgrep-rules/` ではなく README / 検知スクリプト本体に直書きすることがある（例: [nextjs-security-scanner](https://github.com/aliksir/nextjs-security-scanner) は CVE-2025-55182 React2Shell の Cisco Talos C2 IP を `scan.sh` / `README.md` / `README_ja.md` / `claude-code/SKILL.md` に記載）。これらは**ツールの検知対象であって自リポの漏洩ではない**ため、誤検出（block）になる。
+Security detection tool repositories may hardcode attacker C2 IPs (threat intelligence IOCs) directly in README files or detection scripts rather than under `semgrep-rules/` (e.g., [nextjs-security-scanner](https://github.com/aliksir/nextjs-security-scanner) includes Cisco Talos C2 IPs for CVE-2025-55182 React2Shell in `scan.sh` / `README.md` / `README_ja.md` / `claude-code/SKILL.md`). These are **detection targets, not actual leaks from the repository**, causing false positive blocks.
 
-これを **per-IP × ファイル限定の `downgrade` エントリ**で抑制する（`allowlist.json` 参照）:
+These are suppressed with **per-IP, file-scoped `downgrade` entries** (see `allowlist.json`):
 
 ```json
 {"action":"downgrade","match":"<IOC IP>","category":["network"],"pathGlob":"**/scan.sh"}
 ```
 
-- **歯止めは2層**: `match`=特定の IOC IP（厳密リテラル、サブネット/wildcard 不使用）＋ `pathGlob`=IOC が出現する実ファイル。これにより、未列挙の本物グローバルIP（将来の漏洩含む）・同一ファイル内の本物IP・`pathGlob` 外の IOC IP は全て **block 維持**（FN ゼロ）。
-- **`pathGlob` は実 relPath のファイルを指定**（`**/scan.sh` 等）。リポ名（`**/nextjs-security-scanner/**`）は `cd repo && scan .` で relPath にリポ名が付かないため**効かない**ので使わない。
-- **ブレース展開 `{a,b}` は未対応**（silent fail で FN になる）。必ず 1ファイル1 `pathGlob` で列挙する。
-- **スナップショット注記**: これらのエントリは登録時点の対象リポに対する snapshot。対象リポが IOC ファイルを追加/改名したら `allowlist.json` の再整備が必要（漏れても FP=過剰ブロックで安全側、FN にはならない）。
+- **Two-layer safeguard**: `match` = specific IOC IP (exact literal, no subnet/wildcard) + `pathGlob` = actual file where the IOC appears. This ensures unlisted real global IPs (including future leaks), real IPs in the same file, and IOC IPs outside the `pathGlob` all remain **blocked** (zero false negatives).
+- **`pathGlob` must reference the actual relPath file** (`**/scan.sh`, etc.). Repository names (`**/nextjs-security-scanner/**`) do not work because `cd repo && scan .` strips the repo name from relPaths.
+- **Brace expansion `{a,b}` is not supported** (fails silently, causing false negatives). Always list one file per `pathGlob`.
+- **Snapshot note**: These entries are snapshots of the target repository at registration time. If the target repository adds or renames IOC files, `allowlist.json` needs to be updated (missing entries result in false positive = over-blocking on the safe side, never false negatives).
 
-**新しい IOC リポを追加する手順**（運用）:
-1. 対象リポを `scan` し、`block` になる IOC IP と出現ファイル（relPath）を特定する
-2. その IP が**公開された脅威インテリ（Cisco Talos / NVD 等）の IOC であり自リポの漏洩でないこと**を人間が確認する（誤って本物の漏洩IPを許可しない歯止め）
-3. `allowlist.json` に `{"action":"downgrade","match":"<IP>","category":["network"],"pathGlob":"**/<file>"}` を IP × 出現ファイルぶん追記する
-4. 再 `scan` で `block=0`、当該 IP が `warning` に残ること（FNゼロ）を確認する
+**Procedure for adding a new IOC repository** (operational):
+1. Run `scan` on the target repository to identify `block`ed IOC IPs and their source files (relPath)
+2. Verify that the IP is a **published threat intelligence IOC (Cisco Talos / NVD, etc.) and not an actual leak** — human confirmation required (prevents accidentally allowlisting real leaked IPs)
+3. Add `{"action":"downgrade","match":"<IP>","category":["network"],"pathGlob":"**/<file>"}` entries to `allowlist.json` for each IP x source file combination
+4. Re-run `scan` to confirm `block=0` and that the IOC IPs appear as `warning` (zero false negatives)
 
-## 免責事項 / Disclaimer
+## Disclaimer
 
-NEKO-not-yoshi はパターンマッチングと NG ワードリストに基づく**補助ツール**であり、**個人情報・顧客名・機密情報の 100% 完全な検出・除去を保証するものではありません**。正規表現や語リストに合致しない未知の漏洩、文脈依存の機密、難読化・暗号化された情報は見逃す可能性があります。**最終的な公開可否は必ず人間がレビューしてください。** 本ツールの使用により生じたいかなる漏洩・損害についても作者は責任を負いません。
+NEKO-not-yoshi is an **assistive tool** based on pattern matching and NG-word lists. It does **NOT guarantee 100% complete detection or removal** of personal information, customer names, or confidential data. Unknown patterns, context-dependent secrets, and obfuscated/encrypted data may be missed. **Always have a human review before publishing.** The author assumes no liability for any leaks or damages arising from the use of this tool.
 
-This is an assistive tool based on pattern matching and NG-word lists. It does **NOT guarantee 100% complete detection or removal** of personal information, customer names, or confidential data. Unknown patterns, context-dependent secrets, and obfuscated/encrypted data may be missed. **Always have a human review before publishing.** The author assumes no liability for any leaks or damages arising from the use of this tool.
-
-## ライセンス
+## License
 
 MIT
