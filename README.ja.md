@@ -14,6 +14,15 @@
 - **IP 検知**: グローバル IP = block / プライベート・ループバック・サブネットマスク = warning
 - **マスク機能**: 検出箇所を伏字化（デフォルト dry-run、`--write` で実書換）
 
+## インストール
+
+```bash
+git clone https://github.com/aliksir/neko-not-yoshi.git
+cd neko-not-yoshi
+```
+
+依存パッケージなし（ゼロ依存設計）。
+
 ## 使い方
 
 ### scan — 漏洩チェック

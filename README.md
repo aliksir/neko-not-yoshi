@@ -14,6 +14,15 @@ A PII and customer name scanner. The **last line of defense** before `git push` 
 - **IP detection**: Global IP = block / Private, loopback, and subnet masks = warning
 - **Masking**: Redacts detected content (dry-run by default, `--write` for actual file modification)
 
+## Installation
+
+```bash
+git clone https://github.com/aliksir/neko-not-yoshi.git
+cd neko-not-yoshi
+```
+
+No dependencies required (zero-dependency design).
+
 ## Usage
 
 ### scan — Leak detection
