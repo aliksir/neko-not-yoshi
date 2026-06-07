@@ -50,6 +50,9 @@ No dependencies required (zero-dependency design).
 
 Duplicates are automatically skipped. All entries are added to the private list.
 
+See [examples/](examples/) for sample import files (CSV, TXT, Markdown).
+
+
 ### export — Export NG words
 
     node src/cli.mjs export                # CSV to stdout (default)

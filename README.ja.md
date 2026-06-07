@@ -50,6 +50,9 @@ cd neko-not-yoshi
 
 重複は自動スキップ。全エントリは private リストに追加される。
 
+インポートファイルのサンプルは [examples/](examples/) を参照。
+
+
 ### export — NGワードエクスポート
 
     node src/cli.mjs export                # CSV で stdout 出力（デフォルト）
