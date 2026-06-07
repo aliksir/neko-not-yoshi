@@ -61,6 +61,11 @@ cd neko-not-yoshi
     node src/cli.mjs export --format md    # Markdownテーブル
     node src/cli.mjs export --public       # public パターンも含む
 
+> **セキュリティに関する注意**: デフォルトでは **private** リスト（顧客名・個人名等）が出力されます。出力ファイル自体が機密情報になります。
+> - 出力ファイルは `.gitignore` に追加し、**コミット・共有しないでください**
+> - `--public` を指定すると public の正規表現パターンも追加で出力されます（private は常に含まれます）
+> - 出力先は `.gitignore` 済みのディレクトリ（例: `exports/`）を推奨します
+
 ### mask — 伏字化
 
     node src/cli.mjs mask <path>           # dry-run（プレビューのみ）

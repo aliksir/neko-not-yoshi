@@ -27,6 +27,12 @@ export function exportWords(format = 'csv', includePublic = false) {
     return '';
   }
 
+  const hasPrivate = entries.some(e => e.source === 'private');
+  if (hasPrivate) {
+    console.error('[WARNING] export結果には機密情報（顧客名・個人名等）が含まれます。');
+    console.error('出力ファイルは .gitignore に追加し、共有・コミットしないでください。');
+  }
+
   let output;
   switch (format) {
     case 'csv':

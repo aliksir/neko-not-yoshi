@@ -61,6 +61,11 @@ See [examples/](examples/) for sample import files (CSV, TXT, Markdown).
     node src/cli.mjs export --format md    # Markdown table
     node src/cli.mjs export --public       # include public patterns
 
+> **Security Warning**: By default, export outputs the **private** list (customer names, personal names, etc.). The exported file itself becomes sensitive data.
+> - Add the output file to `.gitignore` and **never commit or share it**
+> - `--public` adds public patterns to the output (private entries are always included)
+> - Store exported files in a `.gitignore`d directory (e.g., `exports/`)
+
 ### mask — Redaction
 
     node src/cli.mjs mask <path>           # dry-run (preview only)
