@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // neko-not-yoshi: 個人情報・顧客名スキャナ（公開前の漏洩チェック / 最後の砦）
-import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync, unlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { scan } from './scanner.mjs';
+import { resolveKey, generateKey, encrypt, decrypt, isEncrypted, getKeyFilePath } from './crypto.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -165,6 +166,43 @@ function cmdExport(args) {
   });
 }
 
+function cmdKeygen(args) {
+  const toStdout = args.includes('--stdout');
+  generateKey(toStdout);
+  if (!toStdout) console.log('鍵を生成しました: ' + getKeyFilePath());
+  process.exit(0);
+}
+
+function cmdEncrypt(args) {
+  const deleteSrc = args.includes('--delete-source');
+  const privPath = join(ROOT, 'ngwords.private.json');
+  const encPath = join(ROOT, 'ngwords.private.enc.json');
+  if (!existsSync(privPath)) { console.error('ngwords.private.json が見つかりません'); process.exit(1); }
+  let key = resolveKey();
+  if (!key) { console.error('暗号化鍵がありません。keygen で生成してください'); process.exit(1); }
+  const plain = readFileSync(privPath, 'utf8');
+  writeFileSync(encPath, encrypt(plain, key), 'utf8');
+  console.log('暗号化完了: ' + encPath);
+  if (deleteSrc) {
+    unlinkSync(privPath);
+    console.log('平文を削除しました: ' + privPath);
+  }
+  process.exit(0);
+}
+
+function cmdDecrypt(args) {
+  const encPath = join(ROOT, 'ngwords.private.enc.json');
+  const privPath = join(ROOT, 'ngwords.private.json');
+  if (!existsSync(encPath)) { console.error('ngwords.private.enc.json が見つかりません'); process.exit(1); }
+  const key = resolveKey();
+  if (!key) { console.error('復号鍵がありません'); process.exit(1); }
+  const raw = readFileSync(encPath, 'utf8');
+  const plain = decrypt(raw, key);
+  writeFileSync(privPath, plain, 'utf8');
+  console.log('復号完了: ' + privPath);
+  process.exit(0);
+}
+
 function main() {
   const [, , cmd, ...rest] = process.argv;
   switch (cmd) {
@@ -174,14 +212,20 @@ function main() {
     case 'mask': return cmdMask(rest);
     case 'import': return cmdImport(rest);
     case 'export': return cmdExport(rest);
+    case 'keygen': return cmdKeygen(rest);
+    case 'encrypt': return cmdEncrypt(rest);
+    case 'decrypt': return cmdDecrypt(rest);
     default:
-      console.error('使い方: neko-not-yoshi <scan|add|list|mask|import|export> <path|args>');
+      console.error('使い方: neko-not-yoshi <command> <args>');
       console.error('  scan <path> [--format text|json] [--no-private] [--warnings-as-errors]');
       console.error('  add --public <regex> | --private <word> [--category <c>] [--severity block|warning] [--id <id>]');
       console.error('  list [--public|--private]');
       console.error('  mask <path> [--write] [--include-warnings]');
       console.error('  import <file.csv|.txt|.md>  NGワードをバルクインポート');
       console.error('  export [--format csv|txt|md] [--public]  NGワードをエクスポート');
+      console.error('  keygen [--stdout]  暗号化鍵を生成');
+      console.error('  encrypt [--delete-source]  private辞書を暗号化');
+      console.error('  decrypt  暗号化辞書を復号');
       process.exit(2);
   }
 }

@@ -2,6 +2,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { resolveKey, decrypt, isEncrypted } from './crypto.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -15,8 +16,17 @@ export function loadNgwords({ includePrivate = true } = {}) {
   const words = [];
   if (includePrivate) {
     const privPath = join(ROOT, 'ngwords.private.json');
+    const encPath = join(ROOT, 'ngwords.private.enc.json');
+    let priv = null;
     if (existsSync(privPath)) {
-      const priv = JSON.parse(readFileSync(privPath, 'utf8'));
+      priv = JSON.parse(readFileSync(privPath, 'utf8'));
+    } else if (existsSync(encPath)) {
+      const raw = readFileSync(encPath, 'utf8');
+      const key = resolveKey();
+      if (!key) throw new Error('Encrypted dictionary found but no decryption key available');
+      priv = JSON.parse(decrypt(raw, key));
+    }
+    if (priv) {
       for (const w of priv.words || []) {
         if (typeof w.value === 'string' && w.value && !w.value.startsWith('<')) {
           words.push({ ...w, source: 'private' });
