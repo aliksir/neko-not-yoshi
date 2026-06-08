@@ -3,6 +3,7 @@ ngwords.private.json
 ngwords.private.enc.json
 .neko-keyfile
 allowlist.local.json
+ngwords-whitelist.local.json
 _whitelist-seed.json
 _wl-*.txt
 *.log

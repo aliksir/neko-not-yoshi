@@ -36,3 +36,17 @@ export function loadNgwords({ includePrivate = true } = {}) {
   }
   return { patterns, words };
 }
+
+export function loadWhitelist() {
+  const files = ['ngwords-whitelist.json', 'ngwords-whitelist.local.json'];
+  const merged = new Set();
+  for (const f of files) {
+    const p = join(ROOT, f);
+    if (!existsSync(p)) continue;
+    try {
+      const data = JSON.parse(readFileSync(p, 'utf8'));
+      for (const w of data.words || []) merged.add(w.toLowerCase());
+    } catch { /* skip malformed */ }
+  }
+  return merged;
+}
