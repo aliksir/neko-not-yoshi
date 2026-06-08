@@ -7,3 +7,12 @@ _whitelist-seed.json
 _wl-*.txt
 *.log
 .DS_Store
+
+# Local-only tools (require Ollama / MeCab / markitdown)
+tools/ngwords-batch-extract.mjs
+tools/ngwords-llm-extract.mjs
+tools/ngwords-llm-rejudge.mjs
+tools/ngwords-reclassify.mjs
+tools/ngwords-mecab-classify.mjs
+tools/ngwords-whitelist-filter.mjs
+tools/ngwords-whitelist-expand.mjs
