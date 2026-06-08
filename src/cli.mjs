@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // neko-not-yoshi: 個人情報・顧客名スキャナ（公開前の漏洩チェック / 最後の砦）
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { homedir } from 'node:os';
 import { scan } from './scanner.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -14,12 +15,26 @@ const PLACEHOLDERS = {
   'local-path': '<redacted-path>',
 };
 
+function writeStats(entry) {
+  try {
+    const dir = process.env.NEKO_HQ_STATS
+      ? dirname(process.env.NEKO_HQ_STATS)
+      : join(homedir(), '.neko-hq');
+    const file = process.env.NEKO_HQ_STATS || join(dir, 'stats.jsonl');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    appendFileSync(file, JSON.stringify(entry) + '\n', 'utf8');
+  } catch {
+    // stats 書き込み失敗は scan 本体に影響させない
+  }
+}
+
 function flagVal(args, name) {
   const i = args.indexOf(name);
   return i !== -1 && i + 1 < args.length ? args[i + 1] : null;
 }
 
 function cmdScan(args) {
+  const startTime = Date.now();
   const target = args.find((a) => !a.startsWith('--'));
   if (!target) { console.error('scan: <path> が必要'); process.exit(2); }
   const format = flagVal(args, '--format') || 'text';
@@ -35,6 +50,20 @@ function cmdScan(args) {
     }
     console.log(`${res.fileCount} files scanned. block=${res.blocks.length} warning=${res.warnings.length} -> exit ${res.exitCode}`);
   }
+  writeStats({
+    schema_version: '1.1',
+    tool: 'neko-not-yoshi',
+    command: 'scan',
+    ts: new Date().toISOString(),
+    duration_ms: Date.now() - startTime,
+    exit_code: res.exitCode,
+    severity: res.blocks.length > 0 ? 'block' : res.warnings.length > 0 ? 'warn' : 'info',
+    summary: {
+      findings: res.findings.length,
+      blocked: res.blocks.length,
+      warned: res.warnings.length,
+    },
+  });
   process.exit(res.exitCode);
 }
 
