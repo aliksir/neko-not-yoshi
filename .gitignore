@@ -1,5 +1,9 @@
 node_modules/
 ngwords.private.json
+ngwords.private.enc.json
+.neko-keyfile
 allowlist.local.json
+_whitelist-seed.json
+_wl-*.txt
 *.log
 .DS_Store
