@@ -6,7 +6,7 @@ import { join } from 'node:path';
 const NGWORDS_PATH = join(process.env.NEKO_NOT_YOSHI_DIR || process.cwd(), 'ngwords.private.json');
 const DEFAULT_HOST = 'http://localhost:11434';
 const DEFAULT_MODEL = 'qwen3-coder';
-const VALID_CATEGORIES = ['pii', 'customer', 'network', 'local-path', 'custom'];
+const VALID_CATEGORIES = ['pii', 'customer', 'network', 'credential', 'financial', 'local-path', 'custom'];
 
 function parseArgs(argv) {
   const args = { files: [], apply: false, model: DEFAULT_MODEL, host: DEFAULT_HOST, category: null, severity: null };
@@ -24,24 +24,21 @@ function parseArgs(argv) {
   return args;
 }
 
-function buildPrompt(content) {
-  return `あなたは情報セキュリティの専門家です。
-以下のドキュメントから、外部に漏洩してはいけない機密情報を抽出してください。
+const SYSTEM_MSG = 'あなたは情報セキュリティの専門家です。ユーザーが渡すドキュメントから機密情報を抽出し、JSON配列のみを返してください。説明・要約・マークダウンは一切出力しないでください。';
 
-抽出対象:
-- 顧客名・会社名（category: "customer"）
-- 人名（category: "pii"）
-- プロジェクトコード（category: "customer"）
-- 社内システム名（category: "customer"）
-- メールアドレス（category: "pii"）
-- 電話番号（category: "pii"）
-- 内部URL・IPアドレス（category: "network"）
+function buildMessages(content) {
+  return [
+    { role: 'system', content: SYSTEM_MSG },
+    { role: 'user', content: `ドキュメント:
+${content}
 
-出力形式（JSON配列のみ、説明は不要です）:
-[{"value": "抽出した語", "category": "customer", "severity": "block"}]
+上記ドキュメントから、外部に漏洩してはいけない機密情報を全て抽出してください。
 
-ドキュメント:
-${content}`;
+抽出対象: 顧客名・会社名(customer)、人名(pii)、プロジェクトコード(customer)、社内システム名(customer)、メールアドレス(pii)、電話番号(pii)、内部URL・IPアドレス(network)
+
+以下のJSON配列のみを出力してください。説明や要約は絶対に書かないでください:
+[{"value":"抽出した語","category":"customer","severity":"block"}]` },
+  ];
 }
 
 function sanitize(value) {
@@ -76,18 +73,13 @@ function loadExisting() {
   }
 }
 
-async function callOllama(host, model, prompt) {
+async function callOllama(host, model, messages) {
   const url = host + '/api/chat';
-  const body = JSON.stringify({
-    model,
-    messages: [{ role: 'user', content: prompt }],
-    stream: false,
-  });
 
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body,
+    body: JSON.stringify({ model, messages, stream: false }),
   });
 
   if (!res.ok) {
@@ -156,7 +148,7 @@ async function main() {
     const start = Date.now();
     let responseText;
     try {
-      responseText = await callOllama(args.host, args.model, buildPrompt(content));
+      responseText = await callOllama(args.host, args.model, buildMessages(content));
     } catch (err) {
       console.error('LLM 呼び出し失敗: ' + err.message);
       process.exit(1);
@@ -198,22 +190,26 @@ async function main() {
     process.exit(0);
   }
 
+  const reportDir = args.files.length === 1 ? join(args.files[0], '..') : '.';
+  const reportPath = join(reportDir, '_ngword-candidates.json');
+  writeFileSync(reportPath, JSON.stringify(allCandidates, null, 2) + '\n', 'utf8');
+
+  const byCat = {};
+  for (const c of allCandidates) byCat[c.category] = (byCat[c.category] || 0) + 1;
+  const catSummary = Object.entries(byCat).map(([k, v]) => k + ':' + v).join(', ');
+
   console.log('');
-  console.log('=== NGワード候補（' + allCandidates.length + '件、重複除外: ' + dedupCount + '件） ===');
-  for (const c of allCandidates) {
-    console.log('  [' + c.category + ']' + ' '.repeat(Math.max(1, 12 - c.category.length)) + c.value);
-  }
+  console.log('候補: ' + allCandidates.length + '件 (' + catSummary + '), 重複除外: ' + dedupCount + '件');
+  console.log('詳細: ' + reportPath);
 
   if (!args.apply) {
-    console.log('');
-    console.log('適用するには --apply を付けて再実行してください。');
+    console.log('確認後 --apply で辞書に追記してください。');
     process.exit(0);
   }
 
   const merged = [...existing, ...allCandidates];
   writeFileSync(NGWORDS_PATH, JSON.stringify({ words: merged }, null, 2) + '\n', 'utf8');
-  console.log('');
-  console.log(allCandidates.length + '件を ' + NGWORDS_PATH + ' に追記しました。');
+  console.log(allCandidates.length + '件を辞書に追記しました。');
 }
 
 main().catch(err => {
