@@ -1,0 +1,5 @@
+{
+  "version": "2.0",
+  "description": "General term whitelist for NGword scanner false-positive reduction",
+  "words": []
+}
