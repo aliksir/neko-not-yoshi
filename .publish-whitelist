@@ -1,0 +1,18 @@
+# neko-not-yoshi publish whitelist
+# Only files matching these patterns will be synced from working dir
+.claude-plugin/plugin.json
+.gitignore
+README.md
+README.ja.md
+allowlist.json
+bin/**
+examples/**
+ngwords-whitelist.json
+ngwords.private.example.json
+ngwords.public.json
+package.json
+src/**
+test/**
+tests/**
+!tests/fixtures/**
+ui/**
