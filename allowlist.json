@@ -1,0 +1,38 @@
+{
+  "_comment": "公開可能な allowlist（汎用例 ＋ 公開脅威インテリ IOC IP の降格エントリ、v0.1.4〜）。具体的な個人名/メール/パスは含まない。環境固有の許可は allowlist.local.json（.gitignore）に書く。両ファイルはマージされる。action:'allow'（既定）は完全許可（match必須）、action:'downgrade' は block→warning 降格（match省略可・pathGlob/category で限定、findings には残る）。下記は test フィクスチャの許可、セキュリティ検知ルールディレクトリの降格ルール、および Cisco Talos 公開 IOC IP の降格ルール（IOC降格ルールの詳細は README §IOC降格ルール参照）。",
+  "allow": [
+    {"match": "203.0.113.", "reason": "RFC5737 documentation/test IP fixture", "pathGlob": "**/test/**"},
+    {"match": "198.51.100.", "reason": "RFC5737 TEST-NET-2 IP fixture", "pathGlob": "**/test/**"},
+    {"match": "2001:db8:", "reason": "RFC3849 documentation IPv6 fixture", "pathGlob": "**/test/**"},
+    {"match": "@example.", "reason": "RFC2606 example domain (test/docs fixture)", "pathGlob": "**/test/**"},
+    {"match": "@example.", "reason": "example author email in plugin.json fixture", "pathGlob": "**/plugin.json"},
+    {"match": "@realcorp.io", "reason": "test fixture domain", "pathGlob": "**/test/**"},
+    {"match": "C:/Users/", "reason": "home-path test fixture (alice/bob/<other>)", "pathGlob": "**/test/**"},
+    {"action": "downgrade", "pathGlob": "**/semgrep-rules/**", "category": ["pii", "network"], "reason": "セキュリティ検知ルール内のIOC/架空サンプル（攻撃者メール・C2 IP 等）はツールの検知対象であり自リポの漏洩ではない。block→warning に降格し findings には残す（FN ゼロ維持）。customer カテゴリは降格対象外。"},
+
+    {"action": "downgrade", "match": "144.172.102.88", "category": ["network"], "pathGlob": "**/scan.sh", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。本物のIOC以外のグローバルIPは match 不一致で block 維持。"},
+    {"action": "downgrade", "match": "172.86.127.128", "category": ["network"], "pathGlob": "**/scan.sh", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.112.136", "category": ["network"], "pathGlob": "**/scan.sh", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.117.112", "category": ["network"], "pathGlob": "**/scan.sh", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。"},
+
+    {"action": "downgrade", "match": "144.172.102.88", "category": ["network"], "pathGlob": "**/README.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "172.86.127.128", "category": ["network"], "pathGlob": "**/README.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.112.136", "category": ["network"], "pathGlob": "**/README.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.117.112", "category": ["network"], "pathGlob": "**/README.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+
+    {"action": "downgrade", "match": "144.172.102.88", "category": ["network"], "pathGlob": "**/README_ja.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "172.86.127.128", "category": ["network"], "pathGlob": "**/README_ja.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.112.136", "category": ["network"], "pathGlob": "**/README_ja.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.117.112", "category": ["network"], "pathGlob": "**/README_ja.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+
+    {"action": "downgrade", "match": "144.172.102.88", "category": ["network"], "pathGlob": "**/claude-code/SKILL.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "172.86.127.128", "category": ["network"], "pathGlob": "**/claude-code/SKILL.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.112.136", "category": ["network"], "pathGlob": "**/claude-code/SKILL.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.117.112", "category": ["network"], "pathGlob": "**/claude-code/SKILL.md", "reason": "Cisco Talos CVE-2025-55182 React2Shell C2 IOC（脅威インテリの参照値）。block→warning、findings残存（FNゼロ）。"},
+
+    {"action": "downgrade", "match": "144.172.102.88", "category": ["network"], "pathGlob": "**/allowlist.json", "reason": "Cisco Talos IOC IP — neko-not-yoshi 自身の allowlist 設定値（self-scan 用、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "172.86.127.128", "category": ["network"], "pathGlob": "**/allowlist.json", "reason": "Cisco Talos IOC IP — neko-not-yoshi 自身の allowlist 設定値（self-scan 用、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.112.136", "category": ["network"], "pathGlob": "**/allowlist.json", "reason": "Cisco Talos IOC IP — neko-not-yoshi 自身の allowlist 設定値（self-scan 用、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。"},
+    {"action": "downgrade", "match": "144.172.117.112", "category": ["network"], "pathGlob": "**/allowlist.json", "reason": "Cisco Talos IOC IP — neko-not-yoshi 自身の allowlist 設定値（self-scan 用、自リポの漏洩ではない）。block→warning、findings残存（FNゼロ）。"}
+  ]
+}

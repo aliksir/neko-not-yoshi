@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>neko-not-yoshi - NG/Whitelist Manager</title>
+<style>
+  :root { --bg: #1a1a2e; --surface: #16213e; --border: #0f3460; --accent: #e94560; --accent2: #0f3460; --text: #eee; --dim: #888; --ok: #4ade80; --warn: #fbbf24; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .header { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header .cat { font-size: 24px; }
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .tab { padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; color: var(--dim); font-weight: 500; transition: all .2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .content { max-width: 1000px; margin: 0 auto; padding: 24px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .card-header .count { background: var(--accent2); padding: 2px 10px; border-radius: 12px; font-size: 13px; }
+  .form-row { display: flex; gap: 8px; padding: 12px 16px; flex-wrap: wrap; align-items: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 12px; color: var(--dim); }
+  input, select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 4px; font-size: 14px; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  input.wide { min-width: 250px; }
+  button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; transition: opacity .2s; }
+  button:hover { opacity: 0.85; }
+  .btn-add { background: var(--accent); color: white; }
+  .btn-del { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 4px 10px; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px 16px; font-size: 12px; color: var(--dim); border-bottom: 1px solid var(--border); }
+  td { padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; word-break: break-all; }
+  tr:hover { background: rgba(255,255,255,0.03); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-block { background: rgba(233,69,96,0.2); color: var(--accent); }
+  .badge-warning { background: rgba(251,191,36,0.2); color: var(--warn); }
+  .badge-public { background: rgba(74,222,128,0.15); color: var(--ok); }
+  .badge-private { background: rgba(233,69,96,0.15); color: var(--accent); }
+  .badge-local { background: rgba(251,191,36,0.15); color: var(--warn); }
+  .badge-allow { background: rgba(74,222,128,0.15); color: var(--ok); }
+  .badge-downgrade { background: rgba(251,191,36,0.15); color: var(--warn); }
+  .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 6px; color: white; font-size: 14px; z-index: 100; transition: opacity .3s; }
+  .toast-ok { background: #059669; }
+  .toast-err { background: var(--accent); }
+  .empty { padding: 24px; text-align: center; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="cat">&#128049;</span>
+  <h1>neko-not-yoshi</h1>
+  <span style="color:var(--dim);font-size:14px">NG / Whitelist Manager</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('ng')">NG Words</div>
+  <div class="tab" onclick="switchTab('wl')">Whitelist</div>
+  <div class="tab" onclick="switchTab('al')">Allowlist</div>
+</div>
+
+<div class="content">
+
+  <!-- NG Words Panel -->
+  <div id="panel-ng" class="panel active">
+    <div class="card">
+      <div class="card-header">Public Patterns <span class="count" id="ng-pub-count">0</span></div>
+      <div class="form-row">
+        <div class="form-group"><label>ID</label><input id="ng-pub-id" placeholder="auto"></div>
+        <div class="form-group"><label>Regex</label><input id="ng-pub-regex" class="wide" placeholder="pattern"></div>
+        <div class="form-group"><label>Category</label>
+          <select id="ng-pub-cat"><option>pii</option><option>customer</option><option>network</option><option>local-path</option></select>
+        </div>
+        <div class="form-group"><label>Severity</label>
+          <select id="ng-pub-sev"><option>block</option><option>warning</option></select>
+        </div>
+        <button class="btn-add" onclick="addNgPublic()">Add</button>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Regex</th><th>Category</th><th>Severity</th><th></th></tr></thead>
+        <tbody id="ng-pub-body"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Private Words <span class="count" id="ng-priv-count">0</span></div>
+      <div class="form-row">
+        <div class="form-group"><label>Value</label><input id="ng-priv-val" class="wide" placeholder="word"></div>
+        <div class="form-group"><label>Category</label>
+          <select id="ng-priv-cat"><option>customer</option><option>pii</option></select>
+        </div>
+        <div class="form-group"><label>Severity</label>
+          <select id="ng-priv-sev"><option>block</option><option>warning</option></select>
+        </div>
+        <button class="btn-add" onclick="addNgPrivate()">Add</button>
+      </div>
+      <table>
+        <thead><tr><th>Value</th><th>Category</th><th>Severity</th><th></th></tr></thead>
+        <tbody id="ng-priv-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Whitelist Panel -->
+  <div id="panel-wl" class="panel">
+    <div class="card">
+      <div class="card-header">Public Whitelist <span class="count" id="wl-pub-count">0</span></div>
+      <div class="form-row">
+        <div class="form-group"><label>Word</label><input id="wl-pub-word" class="wide" placeholder="word"></div>
+        <button class="btn-add" onclick="addWhitelist('public')">Add</button>
+      </div>
+      <table>
+        <thead><tr><th>Word</th><th></th></tr></thead>
+        <tbody id="wl-pub-body"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Local Whitelist <span class="count" id="wl-local-count">0</span></div>
+      <div class="form-row">
+        <div class="form-group"><label>Word</label><input id="wl-local-word" class="wide" placeholder="word"></div>
+        <button class="btn-add" onclick="addWhitelist('local')">Add</button>
+      </div>
+      <table>
+        <thead><tr><th>Word</th><th></th></tr></thead>
+        <tbody id="wl-local-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Allowlist Panel -->
+  <div id="panel-al" class="panel">
+    <div class="card">
+      <div class="card-header">Public Allowlist <span class="count" id="al-pub-count">0</span></div>
+      <div class="form-row">
+        <div class="form-group"><label>Match</label><input id="al-pub-match" placeholder="match string"></div>
+        <div class="form-group"><label>Path Glob</label><input id="al-pub-glob" placeholder="**" value="**"></div>
+        <div class="form-group"><label>Action</label>
+          <select id="al-pub-action"><option>allow</option><option>downgrade</option></select>
+        </div>
+        <div class="form-group"><label>Reason</label><input id="al-pub-reason" placeholder="reason"></div>
+        <button class="btn-add" onclick="addAllowlist('public')">Add</button>
+      </div>
+      <table>
+        <thead><tr><th>Match</th><th>Path Glob</th><th>Action</th><th>Reason</th><th></th></tr></thead>
+        <tbody id="al-pub-body"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Local Allowlist <span class="count" id="al-local-count">0</span></div>
+      <div class="form-row">
+        <div class="form-group"><label>Match</label><input id="al-local-match" placeholder="match string"></div>
+        <div class="form-group"><label>Path Glob</label><input id="al-local-glob" placeholder="**" value="**"></div>
+        <div class="form-group"><label>Action</label>
+          <select id="al-local-action"><option>allow</option><option>downgrade</option></select>
+        </div>
+        <div class="form-group"><label>Reason</label><input id="al-local-reason" placeholder="reason"></div>
+        <button class="btn-add" onclick="addAllowlist('local')">Add</button>
+      </div>
+      <table>
+        <thead><tr><th>Match</th><th>Path Glob</th><th>Action</th><th>Reason</th><th></th></tr></thead>
+        <tbody id="al-local-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['ng','wl','al'][i] === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + id));
+}
+
+function toast(msg, ok) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (ok ? 'toast-ok' : 'toast-err');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2000);
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+async function api(path, method, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch('/api/' + path, opts);
+  return res.json();
+}
+
+// NG Words
+async function loadNg() {
+  const data = await api('ngwords', 'GET');
+  const pubBody = document.getElementById('ng-pub-body');
+  const privBody = document.getElementById('ng-priv-body');
+  document.getElementById('ng-pub-count').textContent = data.patterns.length;
+  document.getElementById('ng-priv-count').textContent = data.words.length;
+
+  pubBody.innerHTML = data.patterns.length === 0 ? '<tr><td colspan="5" class="empty">No patterns</td></tr>' :
+    data.patterns.map(p => `<tr>
+      <td>${esc(p.id)}</td>
+      <td><code>${esc(p.regex)}</code></td>
+      <td><span class="badge badge-public">${esc(p.category)}</span></td>
+      <td><span class="badge badge-${p.severity}">${esc(p.severity)}</span></td>
+      <td><button class="btn-del" onclick="delNgPublic('${esc(p.id)}')">Del</button></td>
+    </tr>`).join('');
+
+  privBody.innerHTML = data.words.length === 0 ? '<tr><td colspan="4" class="empty">No words</td></tr>' :
+    data.words.map(w => `<tr>
+      <td>${esc(w.value)}</td>
+      <td><span class="badge badge-private">${esc(w.category)}</span></td>
+      <td><span class="badge badge-${w.severity}">${esc(w.severity)}</span></td>
+      <td><button class="btn-del" onclick="delNgPrivate('${esc(w.value)}')">Del</button></td>
+    </tr>`).join('');
+}
+
+async function addNgPublic() {
+  const regex = document.getElementById('ng-pub-regex').value.trim();
+  if (!regex) return toast('Regex is required', false);
+  await api('ngwords', 'POST', {
+    type: 'public', id: document.getElementById('ng-pub-id').value.trim() || undefined,
+    regex, category: document.getElementById('ng-pub-cat').value, severity: document.getElementById('ng-pub-sev').value
+  });
+  document.getElementById('ng-pub-regex').value = '';
+  document.getElementById('ng-pub-id').value = '';
+  toast('Public pattern added', true);
+  loadNg();
+}
+
+async function addNgPrivate() {
+  const value = document.getElementById('ng-priv-val').value.trim();
+  if (!value) return toast('Value is required', false);
+  const res = await api('ngwords', 'POST', {
+    type: 'private', value, category: document.getElementById('ng-priv-cat').value, severity: document.getElementById('ng-priv-sev').value
+  });
+  if (res.error) return toast(res.error, false);
+  document.getElementById('ng-priv-val').value = '';
+  toast('Private word added', true);
+  loadNg();
+}
+
+async function delNgPublic(id) { await api('ngwords', 'DELETE', { type: 'public', id }); toast('Deleted', true); loadNg(); }
+async function delNgPrivate(val) { await api('ngwords', 'DELETE', { type: 'private', value: val }); toast('Deleted', true); loadNg(); }
+
+// Whitelist
+async function loadWl() {
+  const data = await api('whitelist', 'GET');
+  document.getElementById('wl-pub-count').textContent = data.public.length;
+  document.getElementById('wl-local-count').textContent = data.local.length;
+
+  for (const [key, words] of [['pub', data.public], ['local', data.local]]) {
+    const body = document.getElementById('wl-' + key + '-body');
+    body.innerHTML = words.length === 0 ? '<tr><td colspan="2" class="empty">No words</td></tr>' :
+      words.map(w => `<tr>
+        <td>${esc(w)}</td>
+        <td><button class="btn-del" onclick="delWhitelist('${key === 'pub' ? 'public' : 'local'}','${esc(w)}')">Del</button></td>
+      </tr>`).join('');
+  }
+}
+
+async function addWhitelist(file) {
+  const input = document.getElementById('wl-' + (file === 'local' ? 'local' : 'pub') + '-word');
+  const word = input.value.trim();
+  if (!word) return toast('Word is required', false);
+  const res = await api('whitelist', 'POST', { word, file });
+  if (res.error) return toast(res.error, false);
+  input.value = '';
+  toast('Whitelist word added', true);
+  loadWl();
+}
+
+async function delWhitelist(file, word) { await api('whitelist', 'DELETE', { word, file }); toast('Deleted', true); loadWl(); }
+
+// Allowlist
+async function loadAl() {
+  const data = await api('allowlist', 'GET');
+  document.getElementById('al-pub-count').textContent = data.public.length;
+  document.getElementById('al-local-count').textContent = data.local.length;
+
+  for (const [key, items] of [['pub', data.public], ['local', data.local]]) {
+    const body = document.getElementById('al-' + key + '-body');
+    body.innerHTML = items.length === 0 ? '<tr><td colspan="5" class="empty">No entries</td></tr>' :
+      items.map(a => `<tr>
+        <td>${esc(a.match)}</td>
+        <td><code>${esc(a.pathGlob || '**')}</code></td>
+        <td><span class="badge badge-${a.action || 'allow'}">${esc(a.action || 'allow')}</span></td>
+        <td>${esc(a.reason || '')}</td>
+        <td><button class="btn-del" onclick="delAllowlist('${key === 'pub' ? 'public' : 'local'}','${esc(a.match)}')">Del</button></td>
+      </tr>`).join('');
+  }
+}
+
+async function addAllowlist(file) {
+  const prefix = 'al-' + (file === 'local' ? 'local' : 'pub');
+  const match = document.getElementById(prefix + '-match').value.trim();
+  if (!match) return toast('Match is required', false);
+  await api('allowlist', 'POST', {
+    match, file,
+    pathGlob: document.getElementById(prefix + '-glob').value.trim() || '**',
+    action: document.getElementById(prefix + '-action').value,
+    reason: document.getElementById(prefix + '-reason').value.trim()
+  });
+  document.getElementById(prefix + '-match').value = '';
+  document.getElementById(prefix + '-reason').value = '';
+  toast('Allowlist entry added', true);
+  loadAl();
+}
+
+async function delAllowlist(file, match) { await api('allowlist', 'DELETE', { match, file }); toast('Deleted', true); loadAl(); }
+
+// Init
+loadNg(); loadWl(); loadAl();
+</script>
+</body>
+</html>
