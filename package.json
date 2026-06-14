@@ -10,7 +10,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "build": "node scripts/build-protected.mjs"
   },
   "license": "MIT",
   "dependencies": {}

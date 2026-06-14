@@ -4,10 +4,14 @@ import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync, unl
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
-import { scan } from './scanner.mjs';
 import { resolveKey, generateKey, encrypt, decrypt, isEncrypted, getKeyFilePath } from './crypto.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+const _scanMod = existsSync(join(ROOT, 'src', 'scanner.mjs'))
+  ? await import('./scanner.mjs')
+  : await import('../dist/loader.mjs');
+const { scan } = _scanMod;
 
 const PLACEHOLDERS = {
   pii: '<redacted-pii>',

@@ -4,15 +4,20 @@
 .gitignore
 README.md
 README.ja.md
-allowlist.json
 bin/**
+dist/**
 examples/**
 ngwords-whitelist.json
 ngwords.private.example.json
-ngwords.public.json
 package.json
 src/**
 test/**
 tests/**
 !tests/fixtures/**
 ui/**
+# Protected: detection logic encrypted in dist/core.enc
+!src/scanner.mjs
+!src/ngwords.mjs
+!src/allowlist.mjs
+!ngwords.public.json
+!allowlist.json
