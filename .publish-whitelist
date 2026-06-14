@@ -21,3 +21,4 @@ ui/**
 !src/allowlist.mjs
 !ngwords.public.json
 !allowlist.json
+docs/**
