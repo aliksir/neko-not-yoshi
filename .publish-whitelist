@@ -1,0 +1,25 @@
+# neko-not-yoshi publish whitelist
+# Only files matching these patterns will be synced from working dir
+.claude-plugin/plugin.json
+.gitignore
+README.md
+README.ja.md
+bin/**
+dist/**
+examples/**
+ngwords-whitelist.json
+ngwords.private.example.json
+package.json
+src/**
+test/**
+tests/**
+!tests/fixtures/**
+# Protected: detection logic encrypted in dist/core.enc
+!src/scanner.mjs
+# serve (Web UI) is local-only
+!src/server.mjs
+!src/ngwords.mjs
+!src/allowlist.mjs
+!ngwords.public.json
+!allowlist.json
+docs/**

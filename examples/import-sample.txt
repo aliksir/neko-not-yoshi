@@ -1,0 +1,4 @@
+# Lines starting with # are ignored
+Acme Corporation
+John Smith
+secret-project-alpha

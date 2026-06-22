@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+// neko-not-yoshi CLI entry point
+// Delegates to src/cli.mjs
+
+import { fileURLToPath, pathToFileURL } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const cliPath = resolve(__dirname, '..', 'src', 'cli.mjs');
+
+// Dynamic import to run the CLI with current argv.
+// Windows ESM requires file:// URL for absolute paths — a raw `C:\...` path
+// fails with ERR_UNSUPPORTED_ESM_URL_SCHEME because `c:` is parsed as a protocol.
+await import(pathToFileURL(cliPath).href);
